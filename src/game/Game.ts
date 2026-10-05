@@ -15,6 +15,7 @@ import { UI } from '../ui/UI';
 import { HotelWorld } from '../world/HotelWorld';
 import { evidenceProp } from '../world/props';
 import { Input } from './Input';
+import { onLangChange, t } from '../i18n/i18n';
 
 export class Game {
   renderer: THREE.WebGLRenderer;
@@ -109,18 +110,18 @@ export class Game {
     const elev = new THREE.Group();
     elev.position.set(11.6, 1.2, 0);
     this.interaction.add({
-      id: 'elevator', kind: 'Door', label: 'Elevator', radius: 2.0,
+      id: 'elevator', kind: 'Door', get label() { return t('label.elevator'); }, radius: 2.0,
       position: elev.position.clone(), object: elev,
       important: () => false, fresh: () => false,
-      onInteract: () => { this.audio.door(); this.ui.toast('Elevator locked down by HPD until the scene is cleared.'); },
+      onInteract: () => { this.audio.door(); this.ui.toast(t('toast.elevator')); },
     });
     // Environmental: pill bottle (red herring flavour)
     const pills = new THREE.Group(); pills.position.set(-3.45, 0.7, -12.4);
     this.interaction.add({
-      id: 'pills', kind: 'EnvironmentalObject', label: 'Pill bottle', radius: 1.3,
+      id: 'pills', kind: 'EnvironmentalObject', get label() { return t('label.pills'); }, radius: 1.3,
       position: pills.position.clone(), object: pills,
       important: () => true, fresh: () => false,
-      onInteract: () => { this.player.pose('investigate', 0.9); this.audio.investigate(); this.ui.toast('Sleeping pills — full bottle, seal unbroken. Placed, not taken.', false, 3800); this.state.flags.add('pills_seen'); this.state.emit(); },
+      onInteract: () => { this.player.pose('investigate', 0.9); this.audio.investigate(); this.ui.toast(t('toast.pills'), false, 3800); this.state.flags.add('pills_seen'); this.state.emit(); },
     });
   }
 
@@ -151,6 +152,32 @@ export class Game {
       for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) el.addEventListener(ev, () => (this.input.rotate = 0));
     };
     hold('t-rot-l', -1); hold('t-rot-r', 1);
+
+    // Mouse-wheel zoom (desktop) + pinch zoom (touch)
+    const canvas = this.renderer.domElement;
+    canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      if (!this.running || this.ui.blocking) return;
+      const delta = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+      this.cam.zoomBy(Math.exp(delta * 0.0012));
+    }, { passive: false });
+    const pts = new Map<number, { x: number; y: number }>();
+    let pinch = 0;
+    canvas.addEventListener('pointerdown', (e) => { if (e.pointerType === 'touch') pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); });
+    canvas.addEventListener('pointermove', (e) => {
+      if (!pts.has(e.pointerId)) return;
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pts.size === 2) {
+        const [a, b] = [...pts.values()];
+        const d = Math.hypot(a.x - b.x, a.y - b.y);
+        if (pinch) this.cam.zoomBy(pinch / d);
+        pinch = d;
+      }
+    });
+    const up = (e: PointerEvent) => { pts.delete(e.pointerId); pinch = 0; };
+    canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
+
+    onLangChange(() => this.npcs.forEach((n) => n.refreshLabel()));
   }
 
   /** Called from the title screen */
@@ -159,7 +186,7 @@ export class Game {
     this.audio.start();
     this.running = true;
     this.ui.showHUD();
-    this.ui.toast(this.mobile ? 'Drag left side to move · tap INVESTIGATE near clues' : 'WASD to move · E to investigate · Q for Detective Vision', false, 4200);
+    this.ui.toast(t(this.mobile ? 'toast.startMobile' : 'toast.startDesktop'), false, 4200);
   }
 
   private resize() {
@@ -185,10 +212,10 @@ export class Game {
       this.ui.ping('btn-evidence');
       const cs = this.state.contradictions;
       if (cs.length > contraBefore) {
-        this.ui.toast(`⚡ CONTRADICTION: ${cs[cs.length - 1].title}`, true, 3600);
+        this.ui.toast(t('toast.contradiction', { t: cs[cs.length - 1].title }), true, 3600);
         this.ui.ping('btn-board');
       }
-      if (this.state.discovered.size === this.def.evidence.length) setTimeout(() => this.ui.toast('All evidence collected. Open the Case Board [B] to deduce.', false, 4000), 3800);
+      if (this.state.discovered.size === this.def.evidence.length) setTimeout(() => this.ui.toast(t('toast.allEvidence'), false, 4000), 3800);
     }
   }
 
@@ -204,7 +231,7 @@ export class Game {
     const check = () => {
       if (this.state.contradictions.length > contraBefore) {
         const cs = this.state.contradictions;
-        this.ui.toast(`⚡ CONTRADICTION: ${cs[cs.length - 1].title}`, true, 3600);
+        this.ui.toast(t('toast.contradiction', { t: cs[cs.length - 1].title }), true, 3600);
       }
     };
     const prev = this.ui.onDialogueClose;
@@ -220,6 +247,9 @@ export class Game {
       else { ui.closeModals(); ui.toggleAI(false); }
     }
     if (inp.hit('m')) ui.toggleMute();
+    if (inp.hit('l')) ui.toggleLang();
+    if (inp.hit('=', '+')) this.cam.zoomBy(0.85);
+    if (inp.hit('-', '_')) this.cam.zoomBy(1 / 0.85);
     if (ui.foundOpen) { if (inp.hit('e', ' ', 'enter')) ui.closeFound(); return; }
     if (ui.dialogueOpen) {
       for (let n = 0; n <= 9; n++) if (inp.hit(String(n))) ui.dialogueKey(n);
@@ -232,7 +262,7 @@ export class Game {
     if (inp.hit('t')) ui.toggleAI();
     if (ui.blocking) return;
     if (inp.hit('q')) {
-      if (this.vision.trigger()) { this.audio.vision(); this.ui.toast('DETECTIVE VISION', false, 1200); }
+      if (this.vision.trigger()) { this.audio.vision(); this.ui.toast(t('toast.vision'), false, 1200); }
       else this.audio.warn();
     }
     if (inp.hit('e', ' ', 'enter') && this.interaction.focused && !this.busy) this.interaction.focused.onInteract();
@@ -260,7 +290,7 @@ export class Game {
     this.interaction.update(dt, this.player.position, this.player.rig.object.rotation.y, v, !blocked);
 
     const f = this.interaction.focused;
-    this.ui.setPrompt(f && !blocked ? f.label : null, f?.kind === 'NPC' ? 'TALK' : f?.kind === 'Door' ? 'USE' : 'INVESTIGATE');
+    this.ui.setPrompt(f && !blocked ? (f.kind === 'NPC' ? this.dialogue.npc(f.id).name : f.kind === 'Door' || f.id === 'pills' ? f.label : this.evidence.get(f.id)?.name ?? f.label) : null, t(f?.kind === 'NPC' ? 'verb.talk' : f?.kind === 'Door' ? 'verb.use' : 'verb.investigate'));
     this.ui.setVision(this.vision.meter, this.vision.active > 0, v);
 
     this.cam.update(dt, this.player.position, this.world.walls);

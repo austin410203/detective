@@ -22,12 +22,28 @@ export class CameraRig {
   resize(w: number, h: number) {
     this.camera.aspect = w / h;
     // portrait phones need to see more
-    this.targetDist = w < h ? 16 : 12;
+    const portrait = w < h;
+    if (portrait !== this.portrait) {
+      this.portrait = portrait;
+      this.userDist = portrait ? 16 : 12;
+      if (!this.zoomOverride) this.targetDist = this.userDist;
+    }
     this.camera.updateProjectionMatrix();
   }
 
   rotate(delta: number) { this.targetYaw += delta; }
-  zoomTo(d: number | null) { this.targetDist = d ?? (this.camera.aspect < 1 ? 16 : 12); }
+  /** user zoom level (mouse wheel / pinch); dialogue close-ups return to it */
+  private userDist = 12;
+  private portrait: boolean | null = null;
+  private zoomOverride = false;
+  zoomTo(d: number | null) {
+    this.zoomOverride = d != null;
+    this.targetDist = d ?? this.userDist;
+  }
+  zoomBy(factor: number) {
+    this.userDist = Math.min(24, Math.max(5, this.userDist * factor));
+    if (!this.zoomOverride) this.targetDist = this.userDist;
+  }
   bump(amount = 0.15) { this.shake = amount; }
 
   snap(target: THREE.Vector3) {
@@ -73,8 +89,11 @@ export class CameraRig {
       const m = w.material as THREE.MeshStandardMaterial;
       const goal = hits.has(w) ? 0.12 : 1;
       m.opacity += (goal - m.opacity) * (1 - Math.exp(-dt * 10));
-      m.depthWrite = m.opacity > 0.95;
-      w.castShadow = true;
+      // only switch to the transparent pass while actually faded: overlapping transparent walls
+      // re-sort every frame and flicker, so opaque walls stay opaque
+      const tr = m.opacity < 0.97;
+      if (m.transparent !== tr) { m.transparent = tr; m.depthWrite = !tr; m.needsUpdate = true; }
+      if (!tr) m.opacity = goal === 1 && m.opacity > 0.97 ? 1 : m.opacity;
     }
   }
 

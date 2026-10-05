@@ -30,15 +30,22 @@ export class NPC {
     this.object.add(this.ring);
 
     // floating name tag
-    const cv = document.createElement('canvas'); cv.width = 256; cv.height = 64;
-    const c = cv.getContext('2d')!;
-    c.font = '600 26px "IBM Plex Sans", sans-serif'; c.textAlign = 'center';
-    c.fillStyle = 'rgba(8,10,16,0.65)'; c.beginPath(); c.roundRect(28, 8, 200, 44, 10); c.fill();
-    c.fillStyle = '#e8dcc0'; c.fillText(def.name.split(' ')[0].toUpperCase(), 128, 40);
-    const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
-    this.label = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, opacity: 0 }));
+    this.label = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false, opacity: 0 }));
     this.label.scale.set(1.2, 0.3, 1); this.label.position.y = 2.35;
     this.object.add(this.label);
+    this.refreshLabel();
+  }
+
+  /** Redraw the name tag (called again when the language changes) */
+  refreshLabel() {
+    const cv = document.createElement('canvas'); cv.width = 256; cv.height = 64;
+    const c = cv.getContext('2d')!;
+    c.font = '600 26px "IBM Plex Sans", "Noto Sans TC", sans-serif'; c.textAlign = 'center';
+    c.fillStyle = 'rgba(8,10,16,0.65)'; c.beginPath(); c.roundRect(28, 8, 200, 44, 10); c.fill();
+    c.fillStyle = '#e8dcc0'; c.fillText(this.def.name.split(/[ ·]/)[0].toUpperCase(), 128, 40);
+    const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
+    const m = this.label.material as THREE.SpriteMaterial;
+    m.map?.dispose(); m.map = tex; m.needsUpdate = true;
   }
 
   get position() { return this.object.position; }

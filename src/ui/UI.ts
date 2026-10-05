@@ -5,6 +5,7 @@ import type { EvidenceManager } from '../evidence/EvidenceManager';
 import type { CaseState } from '../investigation/CaseState';
 import type { CaseResult } from '../investigation/Scoring';
 import type { DialogueManager } from '../npc/DialogueManager';
+import { applyStatic, getLang, onLangChange, setLang, t } from '../i18n/i18n';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
@@ -38,6 +39,8 @@ export class UI {
   ) {
     state.onChange(() => this.refresh());
     this.wire();
+    onLangChange(() => this.relabel());
+    this.relabel();
   }
 
   // ------------------------------------------------------------ wiring
@@ -66,11 +69,37 @@ export class UI {
     document.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => this.audio.click()));
     $('dlg-text').onclick = () => this.skipTyping();
 
-    // deduction chips
+    $('btn-lang').onclick = () => this.toggleLang();
+    $('btn-lang-title').onclick = () => this.toggleLang();
+  }
+
+  toggleLang() { setLang(getLang() === 'zh' ? 'en' : 'zh'); }
+
+  /** Re-apply all language-dependent text (called on start and on every language switch) */
+  private relabel() {
+    applyStatic();
+    const def = this.state.def;
+    $('hud-case-title').textContent = def.title;
+    $('title-case').textContent = `${def.number} — ${def.title}`;
+    $('title-tagline').textContent = def.tagline;
+    $('res-kicker').textContent = `${def.number} · ${def.title}`;
+    $('btn-mute').textContent = t(this.audio.muted ? 'hud.unmute' : 'hud.mute');
+    this.lastObjective = '';
+    this.buildChips();
+    this.refresh();
+    if (this.dialogueNpc) {
+      const npc = this.dialogue.npc(this.dialogueNpc);
+      $('dlg-name').textContent = npc.name;
+      $('dlg-role').textContent = npc.role.toUpperCase();
+      this.type(this.dialogue.greeting(this.dialogueNpc));
+    }
+  }
+
+  private buildChips() {
     const d = this.state.def.deduction;
     for (const q of ['who', 'why', 'how'] as const) {
       const box = document.querySelector<HTMLElement>(`.chips[data-q="${q}"]`)!;
-      box.innerHTML = d[q].map((o) => `<button data-v="${esc(o)}">${esc(o)}</button>`).join('');
+      box.innerHTML = d[q].map((o) => `<button data-v="${esc(o)}" class="${this.ded[q] === o ? 'on' : ''}">${esc(t('opt.' + o))}</button>`).join('');
       box.querySelectorAll<HTMLButtonElement>('button').forEach((b) => (b.onclick = () => {
         this.ded[q] = b.dataset.v!;
         box.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b));
@@ -105,7 +134,7 @@ export class UI {
   setPrompt(text: string | null, verb = 'INVESTIGATE') {
     const p = $('prompt');
     const act = $('t-act');
-    if (!text) { p.classList.add('hidden'); act.classList.remove('ready'); act.textContent = 'INVESTIGATE'; return; }
+    if (!text) { p.classList.add('hidden'); act.classList.remove('ready'); act.textContent = t('verb.investigate'); return; }
     $('prompt-text').innerHTML = `${verb}<small>${esc(text)}</small>`;
     p.classList.remove('hidden');
     act.classList.add('ready');
@@ -134,7 +163,7 @@ export class UI {
   toggleMute() {
     const m = this.audio.toggleMute();
     $('sound-icon').textContent = m ? '🔇' : '🔊';
-    $('btn-mute').textContent = m ? 'Unmute' : 'Mute';
+    $('btn-mute').textContent = t(m ? 'hud.unmute' : 'hud.mute');
   }
 
   /** true when gameplay input should pause */
@@ -152,8 +181,8 @@ export class UI {
     $('found-name').textContent = e.name.toUpperCase();
     $('found-quote').textContent = e.quote;
     $('found-desc').textContent = e.description;
-    document.querySelector('.found-kicker')!.textContent = isNew ? 'EVIDENCE FOUND' : 'CASE FILE';
-    $('found-close').innerHTML = isNew ? 'Add to case file <kbd>E</kbd>' : 'Close <kbd>E</kbd>';
+    document.querySelector('.found-kicker')!.textContent = t(isNew ? 'found.kicker' : 'found.file');
+    $('found-close').innerHTML = `${t(isNew ? 'found.add' : 'found.close')} <kbd>E</kbd>`;
     $('found').classList.remove('hidden');
     return new Promise((r) => (this.foundResolve = r));
   }
@@ -198,8 +227,8 @@ export class UI {
       <button data-t="${o.topic.id}" class="${o.asked ? 'asked' : ''}">
         <span class="num">${i + 1}</span>
         <span>${esc(o.topic.label)}</span>
-        ${o.isNew ? '<span class="tag ev">NEW EVIDENCE</span>' : ''}
-      </button>`).join('') + `<button data-t="__bye"><span class="num">0</span><span>Leave</span></button>`;
+        ${o.isNew ? `<span class="tag ev">${t('dlg.new')}</span>` : ''}
+      </button>`).join('') + `<button data-t="__bye"><span class="num">0</span><span>${t('dlg.leave')}</span></button>`;
     box.querySelectorAll<HTMLButtonElement>('button').forEach((b) => (b.onclick = () => this.choose(b.dataset.t!)));
   }
 
@@ -224,7 +253,7 @@ export class UI {
     this.type(html, true);
     this.renderOptions();
     const after = this.state.suspicion[npc];
-    if (after > before) this.toast(`Suspicion ↑ ${this.dialogue.npc(npc).name.split(' ')[0]}`);
+    if (after > before) this.toast(t('toast.suspicion', { name: this.dialogue.npc(npc).name.split(/[ ·]/)[0] }));
     else if (this.state.flags.size > flagsBefore && this.state.contradictions.length) this.ping('btn-board');
   }
 
@@ -268,19 +297,19 @@ export class UI {
 
   private queryAI(mode: AIMode) {
     const ans = this.ai.query(mode);
-    const labels: Record<AIMode, string> = { summarize: 'SUMMARY', contradictions: 'CONTRADICTIONS', suggest: 'NEXT STEP', relationships: 'SUSPECT ANALYSIS' };
+    const label = t('ai.label.' + mode);
     const log = $('ai-log');
     const el = document.createElement('div');
     el.className = 'ai-msg';
-    el.innerHTML = `<span class="q">▸ ${labels[mode]}</span><p class="typing"></p>`;
+    el.innerHTML = `<span class="q">▸ ${label}</span><p class="typing"></p>`;
     log.appendChild(el);
     log.scrollTop = log.scrollHeight;
     // short "thinking" delay sells the assistant
     setTimeout(() => {
-      el.innerHTML = `<span class="q">▸ ${labels[mode]}</span>` + ans.insights.map((i) => `
+      el.innerHTML = `<span class="q">▸ ${label}</span>` + ans.insights.map((i) => `
         <div class="ins"><p>${esc(i.text)}</p>
-        <div class="conf">CONFIDENCE ${i.confidence}% <i><b style="width:${i.confidence}%"></b></i></div></div>`).join('') +
-        `<div class="flag">⚠ CONTRADICTED BY EVIDENCE YOU FOUND LATER</div>`;
+        <div class="conf">${t('ai.confidence')} ${i.confidence}% <i><b style="width:${i.confidence}%"></b></i></div></div>`).join('') +
+        `<div class="flag">${t('ai.retracted')}</div>`;
       log.scrollTop = log.scrollHeight;
       const retract = ans.insights.find((i) => i.retractWhen)?.retractWhen;
       this.aiEntries.push({ el, retractWhen: retract });
@@ -296,8 +325,8 @@ export class UI {
     if (id === 'evidence-panel') this.renderEvidence();
     if (id === 'board') requestAnimationFrame(() => this.renderBoard());
     if (id === 'deduction') {
-      const n = this.state.discovered.size, t = this.state.def.evidence.length;
-      $('ded-warn').textContent = n < t ? `Case file incomplete: ${n}/${t} evidence, ${this.state.contradictions.length}/${this.state.def.contradictions.length} contradictions.` : '';
+      const n = this.state.discovered.size, tot = this.state.def.evidence.length;
+      $('ded-warn').textContent = n < tot ? t('ded.warn', { n, t: tot, c: this.state.contradictions.length, ct: this.state.def.contradictions.length }) : '';
     }
   }
   closeModals() { document.querySelectorAll('.modal').forEach((m) => m.classList.add('hidden')); $('sound-pop').classList.add('hidden'); }
@@ -308,15 +337,15 @@ export class UI {
       const def = this.evidence.get(e.id)!;
       return e.discovered ? `
         <div class="ev-card found">
-          <div class="no"><span>#${String(i + 1).padStart(2, '0')}</span><span class="imp ${e.importance}">${e.importance.toUpperCase()}</span></div>
+          <div class="no"><span>#${String(i + 1).padStart(2, '0')}</span><span class="imp ${e.importance}">${t('imp.' + e.importance)}</span></div>
           <h4>${esc(e.name)}</h4>
           <p>${esc(e.description)}</p>
-          <div class="loc">📍 ${esc(e.location)}${e.relatedCharacters.length ? ' · linked: ' + e.relatedCharacters.map((c) => this.dialogue.npc(c).name.split(' ')[0]).join(', ') : ''}</div>
+          <div class="loc">📍 ${esc(e.location)}${e.relatedCharacters.length ? ` · ${t('ev.linked')}: ` + e.relatedCharacters.map((c) => this.dialogue.npc(c).name.split(/[ ·]/)[0]).join(', ') : ''}</div>
         </div>` : `
         <div class="ev-card locked">
           <div class="no"><span>#${String(i + 1).padStart(2, '0')}</span><span class="imp">???</span></div>
           <h4>${esc(def.name)}</h4>
-          <p>Not yet found.</p>
+          <p>${t('ev.notfound')}</p>
         </div>`;
     }).join('');
   }
@@ -334,10 +363,10 @@ export class UI {
       el.innerHTML = html;
       cork.appendChild(el);
     };
-    pin('victim', 'victim', `<small>VICTIM</small><b>${esc(s.def.victim.name)}</b><small>RM 317 · 03:17?</small>`);
+    pin('victim', 'victim', `<small>${t('board.victim')}</small><b>${esc(s.def.victim.name)}</b><small>${t('board.room')}</small>`);
     for (const e of s.def.evidence) {
       const f = s.discovered.has(e.id);
-      pin(e.id, f ? '' : 'locked', f ? `<small>#${String(this.evidence.index(e.id)).padStart(2, '0')} EVIDENCE</small><b>${esc(e.name)}</b>${esc(e.quote)}` : `<small>#${String(this.evidence.index(e.id)).padStart(2, '0')}</small><b>? ? ?</b>`);
+      pin(e.id, f ? '' : 'locked', f ? `<small>#${String(this.evidence.index(e.id)).padStart(2, '0')} ${t('board.evidence')}</small><b>${esc(e.name)}</b>${esc(e.quote)}` : `<small>#${String(this.evidence.index(e.id)).padStart(2, '0')}</small><b>? ? ?</b>`);
     }
     for (const sp of s.def.suspects)
       pin(sp.id, 'person', `<small>${esc(sp.role.toUpperCase())}</small><b>${esc(sp.name)}</b><div class="sus"><i style="width:${s.suspicion[sp.id]}%"></i></div>`);
@@ -368,7 +397,7 @@ export class UI {
     const cs = s.contradictions;
     $('contra-list').innerHTML = cs.length
       ? cs.map((c) => `<li><b>${esc(c.title)}</b>${esc(c.detail)}</li>`).join('')
-      : '<li class="empty">No contradictions confirmed yet. Collect evidence and question witnesses — contradictions appear here when facts collide.</li>';
+      : `<li class="empty">${t('board.empty')}</li>`;
     $('sus-list').innerHTML = s.def.suspects.map((sp) => `
       <li><span>${esc(sp.name)}<small>${esc(sp.role)}</small></span><i class="meter red"><b style="width:${s.suspicion[sp.id]}%"></b></i><span class="mono">${s.suspicion[sp.id]}</span></li>`).join('');
   }
@@ -376,19 +405,19 @@ export class UI {
   // ------------------------------------------------------------ result
   showResult(r: CaseResult, answer: { who: string; why: string; how: string }) {
     const h = $('res-outcome');
-    h.textContent = r.outcome.toUpperCase();
+    h.textContent = t('outcome.' + r.outcome);
     h.className = r.outcome === 'Wrong Suspect' || r.outcome === 'Insufficient Evidence' ? 'bad' : 'good';
     $('res-total').textContent = String(r.total);
     $('res-ev').textContent = String(r.evidence);
     $('res-ded').textContent = String(r.deduction);
     $('res-inv').textContent = String(r.investigation);
     $('res-ai').textContent = String(r.aiReliance);
-    $('res-rank').textContent = r.rank;
-    const mark = (ok: boolean, v: string) => `<span class="${ok ? 'ok' : 'no'}">${ok ? '✓' : '✗'} ${esc(v)}</span>`;
-    $('res-answer').innerHTML = `WHO ${mark(r.correct.who, answer.who)} · WHY ${mark(r.correct.why, answer.why)} · HOW ${mark(r.correct.how, answer.how)}`;
+    $('res-rank').textContent = t('rank.' + r.rank);
+    const mark = (ok: boolean, v: string) => `<span class="${ok ? 'ok' : 'no'}">${ok ? '✓' : '✗'} ${esc(t('opt.' + v))}</span>`;
+    $('res-answer').innerHTML = `${t('res.who')} ${mark(r.correct.who, answer.who)} · ${t('res.why')} ${mark(r.correct.why, answer.why)} · ${t('res.how')} ${mark(r.correct.how, answer.how)}`;
     $('res-truth').innerHTML = r.correct.who
       ? this.state.def.solution.explanation.map((p) => `<p>${esc(p)}</p>`).join('')
-      : `<p>The real killer walks free tonight. Replay the case — and check which conclusions you took from the AI without verifying.</p>`;
+      : `<p>${t('res.wrong')}</p>`;
     $('result').classList.remove('hidden');
   }
 }

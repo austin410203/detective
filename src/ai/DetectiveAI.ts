@@ -1,5 +1,6 @@
 import type { AIInsight, Requirement } from '../data/types';
 import type { CaseState } from '../investigation/CaseState';
+import { t } from '../i18n/i18n';
 
 export type AIMode = 'summarize' | 'contradictions' | 'suggest' | 'relationships';
 
@@ -27,9 +28,9 @@ export class DetectiveAI {
     if (mode === 'suggest') picked = picked.slice(-1);
     if (mode === 'summarize' && this.state.discovered.size) {
       const n = this.state.discovered.size, total = this.state.def.evidence.length;
-      picked = [{ text: `${n}/${total} evidence logged. ${this.state.contradictions.length} contradiction(s) confirmed on the Case Board.`, confidence: 99 }, ...picked];
+      picked = [{ text: t('ai.count', { n, t: total, c: this.state.contradictions.length }), confidence: 99 }, ...picked];
     }
-    if (!picked.length) picked = [{ text: 'Insufficient data. Investigate further.', confidence: 50 }];
+    if (!picked.length) picked = [{ text: t('ai.nodata'), confidence: 50 }];
     return {
       mode,
       insights: picked.map((p) => ({ text: p.text, confidence: p.confidence, hallucination: !!p.hallucination, retractWhen: p.hallucination ? p.supersededBy : undefined })),

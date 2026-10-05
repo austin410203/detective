@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="./icons/favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&family=Playfair+Display:ital,wght@0,600;0,800;1,600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;800&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&family=Playfair+Display:ital,wght@0,600;0,800;1,600&display=swap" rel="stylesheet" />
 </head>
 <body>
   <div id="app">
@@ -20,41 +20,43 @@
     <div id="hud" class="hidden">
       <div class="hud-tl glass">
         <div class="case-no mono">CASE 001</div>
-        <div class="case-title">The 3:17 Incident</div>
+        <div class="case-title" id="hud-case-title">The 3:17 Incident</div>
         <div class="objective"><span class="obj-dot"></span><span id="objective-text"></span></div>
       </div>
 
       <div class="hud-tr">
         <div class="glass progress-card">
-          <div class="mono label">INVESTIGATION <b id="progress-pct">0%</b></div>
+          <div class="mono label"><span data-i18n="hud.investigation">INVESTIGATION</span> <b id="progress-pct">0%</b></div>
           <div class="bar"><i id="progress-bar"></i></div>
         </div>
         <div class="hud-buttons">
-          <button class="icon-btn glass" id="btn-evidence" title="Evidence (I)"><span>🗂</span><em id="ev-count">0/6</em></button>
-          <button class="icon-btn glass" id="btn-board" title="Case Board (B)"><span>📌</span></button>
-          <button class="icon-btn glass" id="btn-sound" title="Sound (M)"><span id="sound-icon">🔊</span></button>
-          <button class="icon-btn glass" id="btn-help" title="Controls (H)"><span>?</span></button>
+          <button class="icon-btn glass" id="btn-evidence" data-i18n-title="hud.evidence"><span>🗂</span><em id="ev-count">0/6</em></button>
+          <button class="icon-btn glass" id="btn-board" data-i18n-title="hud.board"><span>📌</span></button>
+          <button class="icon-btn glass" id="btn-sound" data-i18n-title="hud.sound"><span id="sound-icon">🔊</span></button>
+          <button class="icon-btn glass" id="btn-help" data-i18n-title="hud.help"><span>?</span></button>
+          <button class="icon-btn glass lang-toggle mono" id="btn-lang" data-i18n-title="hud.lang">中文</button>
         </div>
         <div class="glass sound-pop hidden" id="sound-pop">
-          <label class="mono">VOLUME</label>
+          <label class="mono" data-i18n="hud.volume">VOLUME</label>
           <input type="range" id="volume" min="0" max="1" step="0.05" value="0.7" />
-          <button class="text-btn" id="btn-mute">Mute</button>
+          <button class="text-btn" id="btn-mute" data-i18n="hud.mute">Mute</button>
         </div>
       </div>
 
       <div class="hud-bottom">
         <div id="prompt" class="prompt glass hidden"><kbd>E</kbd><span id="prompt-text">INVESTIGATE</span></div>
         <div class="hints mono desktop-only">
-          <span><kbd>E</kbd> Investigate</span>
-          <span class="vision-hint"><kbd>Q</kbd> Detective Vision <i class="meter"><b id="vision-meter"></b></i></span>
-          <span><kbd>B</kbd> Board</span>
-          <span><kbd>Z</kbd><kbd>C</kbd> Rotate</span>
+          <span><kbd>E</kbd> <span data-i18n="hint.investigate">Investigate</span></span>
+          <span class="vision-hint"><kbd>Q</kbd> <span data-i18n="hint.vision">Detective Vision</span> <i class="meter"><b id="vision-meter"></b></i></span>
+          <span><kbd>B</kbd> <span data-i18n="hint.board">Board</span></span>
+          <span><kbd>Z</kbd><kbd>C</kbd> <span data-i18n="hint.rotate">Rotate</span></span>
+          <span><kbd>⇕</kbd> <span data-i18n="hint.zoom">Zoom</span></span>
         </div>
       </div>
 
       <button id="btn-ai" class="ai-orb glass">
         <span class="orb"></span>
-        <span class="ai-label mono">AI DETECTIVE</span>
+        <span class="ai-label mono" data-i18n="ai.button">AI DETECTIVE</span>
       </button>
 
       <!-- mobile controls -->
@@ -63,7 +65,7 @@
         <div class="touch-buttons">
           <button id="t-rot-l" class="t-btn small">⟲</button>
           <button id="t-rot-r" class="t-btn small">⟳</button>
-          <button id="t-vision" class="t-btn"><span>VISION</span><i class="meter"><b id="vision-meter-m"></b></i></button>
+          <button id="t-vision" class="t-btn"><span data-i18n="touch.vision">VISION</span><i class="meter"><b id="vision-meter-m"></b></i></button>
           <button id="t-act" class="t-btn primary">INVESTIGATE</button>
         </div>
       </div>
@@ -91,7 +93,7 @@
           <div class="dlg-name" id="dlg-name">Emma Chen</div>
           <div class="dlg-role mono" id="dlg-role">Hotel Receptionist</div>
         </div>
-        <div class="dlg-sus mono">SUSPICION <i class="meter red"><b id="dlg-sus"></b></i></div>
+        <div class="dlg-sus mono"><span data-i18n="dlg.suspicion">SUSPICION</span> <i class="meter red"><b id="dlg-sus"></b></i></div>
         <button class="close" id="dlg-close" aria-label="Close">✕</button>
       </div>
       <div class="dlg-text" id="dlg-text"></div>
@@ -103,27 +105,27 @@
       <div class="ai-head">
         <span class="orb small"></span>
         <div>
-          <div class="ai-title mono">AI DETECTIVE <small>v0.3-beta</small></div>
-          <div class="ai-warn mono">⚠ DO NOT BLINDLY TRUST AI</div>
+          <div class="ai-title mono"><span data-i18n="ai.button">AI DETECTIVE</span> <small>v0.3-beta</small></div>
+          <div class="ai-warn mono" data-i18n="ai.warn">⚠ DO NOT BLINDLY TRUST AI</div>
         </div>
         <button class="close" id="ai-close" aria-label="Close">✕</button>
       </div>
       <div class="ai-modes">
-        <button data-mode="summarize">Summarize evidence</button>
-        <button data-mode="contradictions">Find contradictions</button>
-        <button data-mode="suggest">Suggest next step</button>
-        <button data-mode="relationships">Analyze suspects</button>
+        <button data-mode="summarize" data-i18n="ai.summarize">Summarize evidence</button>
+        <button data-mode="contradictions" data-i18n="ai.contradictions">Find contradictions</button>
+        <button data-mode="suggest" data-i18n="ai.suggest">Suggest next step</button>
+        <button data-mode="relationships" data-i18n="ai.relationships">Analyze suspects</button>
       </div>
       <div class="ai-log" id="ai-log">
-        <div class="ai-msg sys">Online. I can organize what you've found and propose leads. My analysis depends entirely on the data you give me — and some of that data may be lies.</div>
+        <div class="ai-msg sys" data-i18n="ai.intro">Online. I can organize what you've found and propose leads. My analysis depends entirely on the data you give me — and some of that data may be lies.</div>
       </div>
-      <div class="ai-foot mono">Queries: <b id="ai-count">0</b> · heavy reliance lowers your score</div>
+      <div class="ai-foot mono"><span data-i18n="ai.queries">Queries</span>: <b id="ai-count">0</b> · <span data-i18n="ai.reliance">heavy reliance lowers your score</span></div>
     </aside>
 
     <!-- ============ Evidence drawer ============ -->
     <div id="evidence-panel" class="modal hidden">
       <div class="modal-card glass wide">
-        <div class="modal-head"><h3>Case File — Evidence</h3><button class="close" data-close>✕</button></div>
+        <div class="modal-head"><h3 data-i18n="ev.title">Case File — Evidence</h3><button class="close" data-close>✕</button></div>
         <div class="ev-grid" id="ev-grid"></div>
       </div>
     </div>
@@ -131,20 +133,20 @@
     <!-- ============ Case Board ============ -->
     <div id="board" class="modal hidden">
       <div class="modal-card board-card">
-        <div class="modal-head"><h3>Case Board</h3><span class="mono sub">Red string = connection · dashed = contradiction</span><button class="close" data-close>✕</button></div>
+        <div class="modal-head"><h3 data-i18n="board.title">Case Board</h3><span class="mono sub" data-i18n="board.sub">Red string = connection · dashed = contradiction</span><button class="close" data-close>✕</button></div>
         <div class="cork" id="cork"><svg id="cork-svg"></svg></div>
         <div class="board-lower">
           <div>
-            <h4 class="mono">CONTRADICTIONS</h4>
+            <h4 class="mono" data-i18n="board.contra">CONTRADICTIONS</h4>
             <ul id="contra-list" class="contra-list"></ul>
           </div>
           <div>
-            <h4 class="mono">SUSPECTS</h4>
+            <h4 class="mono" data-i18n="board.suspects">SUSPECTS</h4>
             <ul id="sus-list" class="sus-list"></ul>
           </div>
         </div>
         <div class="board-actions">
-          <button class="cta" id="btn-deduce">Make Final Deduction →</button>
+          <button class="cta" id="btn-deduce" data-i18n="board.deduce">Make Final Deduction →</button>
         </div>
       </div>
     </div>
@@ -152,35 +154,35 @@
     <!-- ============ Deduction ============ -->
     <div id="deduction" class="modal hidden">
       <div class="modal-card glass">
-        <div class="modal-head"><h3>Final Deduction</h3><button class="close" data-close>✕</button></div>
-        <p class="muted">Name the killer, the motive and the method. You only get one accusation.</p>
-        <div class="ded-q"><div class="mono">WHO?</div><div class="chips" data-q="who"></div></div>
-        <div class="ded-q"><div class="mono">WHY?</div><div class="chips" data-q="why"></div></div>
-        <div class="ded-q"><div class="mono">HOW?</div><div class="chips" data-q="how"></div></div>
+        <div class="modal-head"><h3 data-i18n="ded.title">Final Deduction</h3><button class="close" data-close>✕</button></div>
+        <p class="muted" data-i18n="ded.desc">Name the killer, the motive and the method. You only get one accusation.</p>
+        <div class="ded-q"><div class="mono" data-i18n="ded.who">WHO?</div><div class="chips" data-q="who"></div></div>
+        <div class="ded-q"><div class="mono" data-i18n="ded.why">WHY?</div><div class="chips" data-q="why"></div></div>
+        <div class="ded-q"><div class="mono" data-i18n="ded.how">HOW?</div><div class="chips" data-q="how"></div></div>
         <div class="ded-warn mono" id="ded-warn"></div>
-        <button class="cta" id="btn-accuse" disabled>Accuse</button>
+        <button class="cta" id="btn-accuse" disabled data-i18n="ded.accuse">Accuse</button>
       </div>
     </div>
 
     <!-- ============ Result ============ -->
     <div id="result" class="screen hidden">
       <div class="result-card">
-        <div class="mono kicker">CASE 001 · THE 3:17 INCIDENT</div>
+        <div class="mono kicker" id="res-kicker">CASE 001 · THE 3:17 INCIDENT</div>
         <h1 id="res-outcome">CASE SOLVED</h1>
         <div class="res-score"><span id="res-total">87</span><small>/100</small></div>
         <div class="res-grid">
-          <div><label class="mono">EVIDENCE</label><b id="res-ev"></b></div>
-          <div><label class="mono">DEDUCTION</label><b id="res-ded"></b></div>
-          <div><label class="mono">INVESTIGATION</label><b id="res-inv"></b></div>
-          <div><label class="mono">AI RELIANCE</label><b id="res-ai"></b></div>
+          <div><label class="mono" data-i18n="res.evidence">EVIDENCE</label><b id="res-ev"></b></div>
+          <div><label class="mono" data-i18n="res.deduction">DEDUCTION</label><b id="res-ded"></b></div>
+          <div><label class="mono" data-i18n="res.investigation">INVESTIGATION</label><b id="res-inv"></b></div>
+          <div><label class="mono" data-i18n="res.ai">AI RELIANCE</label><b id="res-ai"></b></div>
         </div>
-        <div class="mono kicker">RANK</div>
+        <div class="mono kicker" data-i18n="res.rank">RANK</div>
         <div class="res-rank" id="res-rank">MASTER DETECTIVE</div>
         <div class="res-answer" id="res-answer"></div>
         <div class="res-truth" id="res-truth"></div>
         <div class="res-actions">
-          <button class="cta" id="btn-replay">Replay Case</button>
-          <button class="text-btn" id="btn-continue">Keep investigating</button>
+          <button class="cta" id="btn-replay" data-i18n="res.replay">Replay Case</button>
+          <button class="text-btn" id="btn-continue" data-i18n="res.continue">Keep investigating</button>
         </div>
       </div>
     </div>
@@ -188,36 +190,39 @@
     <!-- ============ Help ============ -->
     <div id="help" class="modal hidden">
       <div class="modal-card glass">
-        <div class="modal-head"><h3>Controls</h3><button class="close" data-close>✕</button></div>
+        <div class="modal-head"><h3 data-i18n="help.title">Controls</h3><button class="close" data-close>✕</button></div>
         <table class="help-table mono">
-          <tr><td>WASD / Arrows</td><td>Move (Shift = run)</td></tr>
-          <tr><td>E / Space</td><td>Investigate · Talk</td></tr>
-          <tr><td>Q</td><td>Detective Vision (5s, 15s cooldown)</td></tr>
-          <tr><td>Z / C</td><td>Rotate camera</td></tr>
-          <tr><td>I</td><td>Evidence file</td></tr>
-          <tr><td>B</td><td>Case Board</td></tr>
-          <tr><td>T</td><td>AI Detective</td></tr>
-          <tr><td>M</td><td>Mute</td></tr>
-          <tr><td>Esc</td><td>Close panels</td></tr>
+          <tr><td>WASD / Arrows</td><td data-i18n="help.move">Move (Shift = run)</td></tr>
+          <tr><td>E / Space</td><td data-i18n="help.interact">Investigate · Talk</td></tr>
+          <tr><td>Q</td><td data-i18n="help.vision">Detective Vision (5s, 15s cooldown)</td></tr>
+          <tr><td>Z / C</td><td data-i18n="help.rotate">Rotate camera</td></tr>
+          <tr><td data-i18n="help.wheel">Mouse wheel / + −</td><td data-i18n="help.zoom">Zoom in / out</td></tr>
+          <tr><td>I</td><td data-i18n="help.evidence">Evidence file</td></tr>
+          <tr><td>B</td><td data-i18n="help.board">Case Board</td></tr>
+          <tr><td>T</td><td data-i18n="help.ai">AI Detective</td></tr>
+          <tr><td>M</td><td data-i18n="help.mute">Mute</td></tr>
+          <tr><td>L</td><td data-i18n="help.lang">Switch language</td></tr>
+          <tr><td>Esc</td><td data-i18n="help.close">Close panels</td></tr>
         </table>
-        <p class="muted">Mobile: drag the left side to move (push far to run). Buttons on the right.</p>
+        <p class="muted" data-i18n="help.mobile">Mobile: drag the left side to move (push far to run). Buttons on the right.</p>
       </div>
     </div>
 
     <!-- ============ Title ============ -->
     <div id="title" class="screen title">
+      <button class="lang-toggle title-lang mono" id="btn-lang-title">中文</button>
       <div class="title-inner">
-        <div class="mono kicker">A NOIR INVESTIGATION</div>
+        <div class="mono kicker" data-i18n="title.kicker">A NOIR INVESTIGATION</div>
         <h1 class="logo">AI <span>Detective</span></h1>
-        <div class="case-line mono">CASE 001 — THE 3:17 INCIDENT</div>
+        <div class="case-line mono" id="title-case">CASE 001 — THE 3:17 INCIDENT</div>
         <div id="intro" class="intro"></div>
         <div class="title-actions">
-          <button class="cta" id="btn-start">Begin Investigation</button>
-          <button class="text-btn hidden" id="btn-load">Continue saved case</button>
+          <button class="cta" id="btn-start" data-i18n="title.start">Begin Investigation</button>
+          <button class="text-btn hidden" id="btn-load" data-i18n="title.load">Continue saved case</button>
         </div>
-        <div class="tagline mono">DO NOT BLINDLY TRUST AI.</div>
+        <div class="tagline mono" id="title-tagline">DO NOT BLINDLY TRUST AI.</div>
       </div>
-      <div id="loading" class="mono loading">Loading scene…</div>
+      <div id="loading" class="mono loading" data-i18n="title.loading">Loading scene…</div>
     </div>
 
     <div id="fade" class="fade"></div>

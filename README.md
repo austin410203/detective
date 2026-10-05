@@ -42,6 +42,8 @@ All assets use relative, Vite-compatible paths; nothing depends on localhost or 
 | Z / C | ⟲ ⟳ | Rotate camera |
 | B / I / T | 📌 / 🗂 / AI orb | Case Board / Evidence / AI Detective |
 | 1–9, 0 | tap | Dialogue choices / leave |
+| Mouse wheel / + − | Pinch | Zoom in / out |
+| L | 中文 / EN button | Switch language (English / 繁體中文) |
 | M, H, Esc | 🔊, ? | Mute, Help, Close |
 
 ## Architecture
@@ -63,6 +65,11 @@ src/
   data/case001.ts         ALL story content: evidence, suspects, dialogue, contradictions, AI script, solution
 api/dialogue.js           server-side LLM route stub (keys stay on the server)
 ```
+
+### Languages
+UI strings live in `src/i18n/i18n.ts`; story text for each language lives next to the case (`src/data/case001.zh.ts`).
+Language is auto-detected, remembered in localStorage, and can be forced with `?lang=zh` / `?lang=en`.
+Switching mid-game keeps all progress — only text is swapped.
 
 ### Adding a case
 Create `src/data/case002.ts` exporting a `CaseDefinition`, register it in `CASES` in `main.ts`,

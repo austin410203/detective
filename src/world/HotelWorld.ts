@@ -91,14 +91,15 @@ export class HotelWorld {
     const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
     const w = horiz ? len + WALL_T : WALL_T, d = horiz ? WALL_T : len + WALL_T;
     const mat = this.wallMat.clone();
-    mat.transparent = true;
+    mat.transparent = false;
     const m = box(w, WALL_H, d, mat, cx, WALL_H / 2, cz);
     m.userData.fade = 1;
     this.group.add(m);
     this.walls.push(m);
-    const trim = box(w + 0.02, 0.12, d + 0.02, this.trimMat, cx, WALL_H - 0.06, cz, false);
+    // cap sits slightly ABOVE the wall top so no two top faces are coplanar (prevents z-fighting flicker)
+    const trim = box(w + 0.04, 0.12, d + 0.04, this.trimMat, cx, WALL_H - 0.03, cz, false);
     trim.receiveShadow = false;
-    m.add(trim); trim.position.set(0, WALL_H / 2 - 0.06, 0);
+    m.add(trim); trim.position.set(0, WALL_H / 2 - 0.03, 0);
     const base = box(w + 0.02, 0.18, d + 0.02, std(0x14161c), 0, -WALL_H / 2 + 0.09, 0, false);
     m.add(base);
     this.collision.addBox(cx, cz, w, d);
@@ -117,11 +118,13 @@ export class HotelWorld {
     for (const [a, b] of gaps) {
       // door frame posts
       for (const p of [a, b]) {
-        const post = horizontal ? box(0.18, WALL_H, 0.4, this.trimMat, p, WALL_H / 2, fixed) : box(0.4, WALL_H, 0.18, this.trimMat, fixed, WALL_H / 2, p);
+        const post = horizontal ? box(0.18, WALL_H + 0.08, 0.4, this.trimMat, p, (WALL_H + 0.08) / 2, fixed) : box(0.4, WALL_H + 0.08, 0.18, this.trimMat, fixed, (WALL_H + 0.08) / 2, p);
         this.group.add(post);
       }
-      const lintel = horizontal ? box(b - a, 0.5, WALL_T, this.wallMat, (a + b) / 2, WALL_H - 0.25, fixed) : box(WALL_T, 0.5, b - a, this.wallMat, fixed, WALL_H - 0.25, (a + b) / 2);
+      const lintel = horizontal ? box(b - a, 0.5, WALL_T, this.wallMat, (a + b) / 2, WALL_H - 0.26, fixed) : box(WALL_T, 0.5, b - a, this.wallMat, fixed, WALL_H - 0.26, (a + b) / 2);
       this.group.add(lintel);
+      const cap = horizontal ? box(b - a + 0.04, 0.12, WALL_T + 0.04, this.trimMat, (a + b) / 2, WALL_H - 0.03, fixed, false) : box(WALL_T + 0.04, 0.12, b - a + 0.04, this.trimMat, fixed, WALL_H - 0.03, (a + b) / 2, false);
+      this.group.add(cap);
     }
   }
 
