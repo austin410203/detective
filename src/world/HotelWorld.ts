@@ -24,7 +24,7 @@ export class HotelWorld {
   walls: THREE.Mesh[] = [];
   footprints: THREE.Mesh[] = [];
   hemi!: THREE.HemisphereLight;
-  private flicker!: THREE.PointLight;
+  
   private neon: THREE.MeshBasicMaterial[] = [];
   private dust!: THREE.Points;
   private t = 0;
@@ -382,7 +382,7 @@ export class HotelWorld {
     this.point(0xffb35c, 9, 14, 0, 2.8, 9);       // lobby chandelier
     this.point(0xff3d8b, 4, 7, -10.8, 2.2, 9.6);  // neon pink
     this.point(0x4fd8ff, 4, 9, 9.4, 2.0, 12.4);   // security monitors
-    this.flicker = this.point(0xffc27a, 6, 10, -5, 2.7, 0); // hallway (flickers)
+    this.point(0xffc27a, 6, 10, -5, 2.7, 0); // hallway (steady)
     this.point(0xffc27a, 6, 10, 5, 2.7, 0);       // hallway east
     this.point(0x31e1ff, 3, 6, 11, 2.4, 0);       // elevator neon
     this.point(0xffa040, 6, 8, -3.2, 1.3, -12.6); // 317 bedside lamp
@@ -419,9 +419,6 @@ export class HotelWorld {
 
   update(dt: number, vision: number) {
     this.t += dt;
-    // hallway flicker
-    const f = Math.sin(this.t * 23) * Math.sin(this.t * 7.3) > 0.82 ? 0.15 : 1;
-    this.flicker.intensity = 13 * f * (Math.random() < 0.01 ? 0.3 : 1);
     // neon breathe
     const pulse = 0.85 + Math.sin(this.t * 2.4) * 0.15;
     for (const m of this.neon) m.opacity = pulse;
